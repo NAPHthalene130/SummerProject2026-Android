@@ -1,6 +1,8 @@
 package com.trafficmanagement.android.ui.inspection
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
@@ -33,6 +35,15 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
   private lateinit var messageTitle: TextView
   private lateinit var messageBody: TextView
   private var filter = WorkOrderFilter.UNRESOLVED
+  private val syncHandler = Handler(Looper.getMainLooper())
+  private val syncRunnable = object : Runnable {
+    override fun run() {
+      if (isAdded && !WorkOrderRepository.isMockMode) {
+        loadData(silent = true)
+        syncHandler.postDelayed(this, SYNC_INTERVAL_MS)
+      }
+    }
+  }
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     super.onViewCreated(view, savedInstanceState)
@@ -70,11 +81,25 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
     loadData()
   }
 
-  private fun loadData() {
+  override fun onStart() {
+    super.onStart()
+    if (!WorkOrderRepository.isMockMode) {
+      syncHandler.postDelayed(syncRunnable, SYNC_INTERVAL_MS)
+    }
+  }
+
+  override fun onStop() {
+    syncHandler.removeCallbacks(syncRunnable)
+    super.onStop()
+  }
+
+  private fun loadData(silent: Boolean = false) {
     if (!isAdded) return
-    progress.isVisible = true
-    recyclerView.isVisible = false
-    messageLayout.isVisible = false
+    if (!silent) {
+      progress.isVisible = true
+      recyclerView.isVisible = false
+      messageLayout.isVisible = false
+    }
 
     WorkOrderRepository.fetchWorkOrders { result ->
       if (!isAdded) return@fetchWorkOrders
@@ -84,12 +109,14 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
         orders.addAll(loadedOrders)
         view?.let(::renderOrders)
       }.onFailure { error ->
-        orders.clear()
-        adapter.submitItems(emptyList())
-        showMessage(
-          "后端工单加载失败",
-          "${error.message ?: "网络连接异常"}\n当前地址：${ApiEndpointManager.baseUrl()}",
-        )
+        if (!silent || orders.isEmpty()) {
+          orders.clear()
+          adapter.submitItems(emptyList())
+          showMessage(
+            "后端工单加载失败",
+            "${error.message ?: "网络连接异常"}\n当前地址：${ApiEndpointManager.baseUrl()}",
+          )
+        }
       }
     }
 
@@ -295,5 +322,9 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
 
   private fun showApiError(prefix: String, error: Throwable) {
     UiMessageHelper.showShort(requireContext(), "$prefix：${error.message ?: "网络异常"}")
+  }
+
+  companion object {
+    private const val SYNC_INTERVAL_MS = 5_000L
   }
 }

@@ -2,8 +2,8 @@
   id("com.android.application")
 }
 
-val trafficApiBaseUrl = providers.gradleProperty("TRAFFIC_API_BASE_URL").orElse("https://your-api-domain.example.com").get()
-val workOrderUseMock = providers.gradleProperty("WORK_ORDER_USE_MOCK").orElse("true").get().toBoolean()
+val trafficApiBaseUrl = providers.gradleProperty("TRAFFIC_API_BASE_URL").orElse("http://10.0.2.2:8000").get()
+val workOrderUseMock = providers.gradleProperty("WORK_ORDER_USE_MOCK").orElse("false").get().toBoolean()
 
 android {
   namespace = "com.trafficmanagement.android"
@@ -57,4 +57,3 @@ dependencies {
   androidTestImplementation("androidx.test.ext:junit:1.2.1")
   androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
-
