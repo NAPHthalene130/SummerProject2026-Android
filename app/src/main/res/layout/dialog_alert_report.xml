@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="上报现场事件" android:textColor="@color/text_primary" android:textSize="20sp" android:textStyle="bold" />
+    <com.google.android.material.chip.ChipGroup android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" app:singleSelection="true">
+      <com.google.android.material.chip.Chip android:id="@+id/chipReportHigh" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="紧急" />
+      <com.google.android.material.chip.Chip android:id="@+id/chipReportMedium" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="重要" />
+      <com.google.android.material.chip.Chip android:id="@+id/chipReportLow" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="一般" />
+    </com.google.android.material.chip.ChipGroup>
+    <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:hint="事件标题"><com.google.android.material.textfield.TextInputEditText android:id="@+id/etReportTitle" android:layout_width="match_parent" android:layout_height="wrap_content" /></com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:hint="路段位置"><com.google.android.material.textfield.TextInputEditText android:id="@+id/etReportLocation" android:layout_width="match_parent" android:layout_height="wrap_content" /></com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:hint="现场说明"><com.google.android.material.textfield.TextInputEditText android:id="@+id/etReportDetail" android:layout_width="match_parent" android:layout_height="wrap_content" android:minLines="3" /></com.google.android.material.textfield.TextInputLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:orientation="horizontal">
+      <com.google.android.material.button.MaterialButton android:id="@+id/btnReportTakePhoto" style="@style/Widget.Traffic.SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="8dp" android:layout_weight="1" android:text="拍照" />
+      <com.google.android.material.button.MaterialButton android:id="@+id/btnReportSelectPhoto" style="@style/Widget.Traffic.SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="相册" />
+    </LinearLayout>
+    <TextView android:id="@+id/tvReportPhotoCount" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="已选择 0 张照片" android:textColor="@color/text_secondary" />
+    <LinearLayout android:id="@+id/layoutReportPhotos" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="horizontal" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:orientation="horizontal">
+      <com.google.android.material.button.MaterialButton android:id="@+id/btnReportCancel" style="@style/Widget.Traffic.SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="8dp" android:layout_weight="1" android:text="取消" />
+      <com.google.android.material.button.MaterialButton android:id="@+id/btnReportSubmit" style="@style/Widget.Traffic.PrimaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="上传" />
+    </LinearLayout>
+  </LinearLayout>
+</ScrollView>

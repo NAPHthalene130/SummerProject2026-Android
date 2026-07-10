@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:paddingStart="16dp"
+  android:paddingTop="18dp"
+  android:paddingEnd="16dp">
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <LinearLayout
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:orientation="vertical">
+
+      <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="工单处置中心"
+        android:textColor="@color/text_primary"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+      <TextView
+        android:id="@+id/tvWorkOrderDataSource"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="与指挥端实时同步派发和处置状态"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+      android:id="@+id/btnRefreshOrders"
+      style="@style/Widget.Traffic.SecondaryButton"
+      android:layout_width="wrap_content"
+      android:layout_height="48dp"
+      android:minWidth="48dp"
+      android:text="刷新"
+      app:icon="@android:drawable/ic_popup_sync"
+      app:iconGravity="textStart" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16dp"
+    android:orientation="horizontal">
+
+    <include android:id="@+id/metricUnresolved" layout="@layout/item_work_order_metric" />
+    <include android:id="@+id/metricCompleted" layout="@layout/item_work_order_metric" />
+    <include android:id="@+id/metricAll" layout="@layout/item_work_order_metric" />
+  </LinearLayout>
+
+  <com.google.android.material.button.MaterialButtonToggleGroup
+    android:id="@+id/orderFilterGroup"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="14dp"
+    app:checkedButton="@id/btnFilterUnresolved"
+    app:selectionRequired="true"
+    app:singleSelection="true">
+
+    <com.google.android.material.button.MaterialButton
+      android:id="@+id/btnFilterUnresolved"
+      style="@style/Widget.Material3.Button.OutlinedButton"
+      android:layout_width="0dp"
+      android:layout_height="44dp"
+      android:layout_weight="1"
+      android:text="未解决" />
+
+    <com.google.android.material.button.MaterialButton
+      android:id="@+id/btnFilterCompleted"
+      style="@style/Widget.Material3.Button.OutlinedButton"
+      android:layout_width="0dp"
+      android:layout_height="44dp"
+      android:layout_weight="1"
+      android:text="已解决" />
+
+    <com.google.android.material.button.MaterialButton
+      android:id="@+id/btnFilterAll"
+      style="@style/Widget.Material3.Button.OutlinedButton"
+      android:layout_width="0dp"
+      android:layout_height="44dp"
+      android:layout_weight="1"
+      android:text="全部" />
+  </com.google.android.material.button.MaterialButtonToggleGroup>
+
+  <ProgressBar
+    android:id="@+id/progressOrders"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginTop="28dp" />
+
+  <LinearLayout
+    android:id="@+id/layoutOrderMessage"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="18dp"
+    android:background="@drawable/bg_soft_panel"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:visibility="gone">
+
+    <TextView
+      android:id="@+id/tvOrderMessageTitle"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center"
+      android:textColor="@color/text_primary"
+      android:textSize="16sp"
+      android:textStyle="bold" />
+
+    <TextView
+      android:id="@+id/tvOrderMessageBody"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="6dp"
+      android:gravity="center"
+      android:textColor="@color/text_secondary" />
+  </LinearLayout>
+
+  <androidx.recyclerview.widget.RecyclerView
+    android:id="@+id/recyclerInspection"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_marginTop="12dp"
+    android:layout_weight="1"
+    android:clipToPadding="false"
+    android:paddingBottom="12dp" />
+</LinearLayout>

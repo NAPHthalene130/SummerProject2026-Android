@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp">
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="事故与违章事件" android:textColor="@color/text_primary" android:textSize="22sp" android:textStyle="bold" />
+  <TextView android:id="@+id/tvAlertSummary" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="@color/text_secondary" />
+  <com.google.android.material.button.MaterialButton android:id="@+id/btnCreateAlertReport" style="@style/Widget.Traffic.PrimaryButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="手动上报现场事件" app:icon="@android:drawable/ic_input_add" />
+  <androidx.recyclerview.widget.RecyclerView android:id="@+id/recyclerAlerts" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="12dp" android:layout_weight="1" />
+</LinearLayout>

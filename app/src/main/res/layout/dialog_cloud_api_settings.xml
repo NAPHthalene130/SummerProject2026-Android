@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:orientation="vertical"
+  android:padding="20dp">
+
+  <TextView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="云端服务器"
+    android:textColor="@color/text_primary"
+    android:textSize="20sp"
+    android:textStyle="bold" />
+
+  <TextView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="6dp"
+    android:text="填写已部署后端的 HTTPS 根地址，不要包含 /api/v1。"
+    android:textColor="@color/text_secondary" />
+
+  <com.google.android.material.textfield.TextInputLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="14dp"
+    android:hint="例如 https://api.example.com">
+
+    <com.google.android.material.textfield.TextInputEditText
+      android:id="@+id/etCloudApiUrl"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:inputType="textUri"
+      android:singleLine="true" />
+  </com.google.android.material.textfield.TextInputLayout>
+
+  <TextView
+    android:id="@+id/tvCloudApiStatus"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:textColor="@color/text_secondary" />
+</LinearLayout>

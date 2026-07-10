@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:orientation="vertical"
+  android:padding="20dp">
+
+  <TextView
+    android:id="@+id/tvFeedbackTitle"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textColor="@color/text_primary"
+    android:textSize="19sp"
+    android:textStyle="bold" />
+
+  <com.google.android.material.textfield.TextInputLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="14dp"
+    android:hint="处置说明">
+
+    <com.google.android.material.textfield.TextInputEditText
+      android:id="@+id/etProcessMessage"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="top"
+      android:minLines="4" />
+  </com.google.android.material.textfield.TextInputLayout>
+
+  <com.google.android.material.textfield.TextInputLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:hint="处置图片 URL（可选）">
+
+    <com.google.android.material.textfield.TextInputEditText
+      android:id="@+id/etProcessImageUrl"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:inputType="textUri" />
+  </com.google.android.material.textfield.TextInputLayout>
+</LinearLayout>

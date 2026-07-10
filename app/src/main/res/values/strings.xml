@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">交通事件处置助手</string>
+  <string name="title_home">首页总览</string>
+  <string name="title_alerts">事件上报</string>
+  <string name="title_inspection">工单处置中心</string>
+  <string name="title_assistant">智能建议</string>
+  <string name="title_device_detail">摄像头详情</string>
+  <string name="title_profile">我的</string>
+</resources>
