@@ -108,7 +108,7 @@ object WorkOrderRepository {
       accidentInfo = "AI 误报行人进入机动车道",
       eventTime = "2026-07-10 07:52:00",
       eventLevel = "low",
-      status = "false_alarm",
+      status = "ignored",
       assignee = "人员D",
       description = "模型将隔离区域内的保洁人员误判为行人闯入机动车道。",
       aiSuggestion = "将该样本加入误报样本库，优化施工人员识别标签。",
@@ -176,7 +176,7 @@ object WorkOrderRepository {
       return
     }
     val current = mockOrders[index]
-    val resolved = status == "completed" || status == "false_alarm"
+    val resolved = status == "completed" || status == "ignored" || status == "false_alarm"
     val updated = current.copy(
       status = status,
       processMessage = processMessage ?: current.processMessage,

@@ -69,6 +69,7 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
         if (!isChecked) return@addOnButtonCheckedListener
         filter = when (checkedId) {
           R.id.btnFilterCompleted -> WorkOrderFilter.COMPLETED
+          R.id.btnFilterIgnored -> WorkOrderFilter.IGNORED
           R.id.btnFilterAll -> WorkOrderFilter.ALL
           else -> WorkOrderFilter.UNRESOLVED
         }
@@ -77,6 +78,7 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
 
     configureMetric(view.findViewById(R.id.metricUnresolved), "未解决工单")
     configureMetric(view.findViewById(R.id.metricCompleted), "已解决工单")
+    configureMetric(view.findViewById(R.id.metricIgnored), "已忽略工单")
     configureMetric(view.findViewById(R.id.metricAll), "全部工单")
     loadData()
   }
@@ -131,14 +133,17 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
 
   private fun renderOrders(root: View) {
     val unresolved = orders.count { !it.isResolved }
-    val completed = orders.count { it.isResolved }
+    val completed = orders.count { it.isCompleted }
+    val ignored = orders.count { it.isIgnored }
     setMetric(root.findViewById(R.id.metricUnresolved), unresolved)
     setMetric(root.findViewById(R.id.metricCompleted), completed)
+    setMetric(root.findViewById(R.id.metricIgnored), ignored)
     setMetric(root.findViewById(R.id.metricAll), orders.size)
 
     val visibleOrders = when (filter) {
       WorkOrderFilter.UNRESOLVED -> orders.filterNot { it.isResolved }
-      WorkOrderFilter.COMPLETED -> orders.filter { it.isResolved }
+      WorkOrderFilter.COMPLETED -> orders.filter { it.isCompleted }
+      WorkOrderFilter.IGNORED -> orders.filter { it.isIgnored }
       WorkOrderFilter.ALL -> orders
     }
     adapter.submitItems(visibleOrders)
@@ -208,7 +213,7 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
       showFeedbackDialog(order, "completed", dialog)
     }
     dialogView.findViewById<MaterialButton>(R.id.btnDialogFalseAlarm).setOnClickListener {
-      showFeedbackDialog(order, "false_alarm", dialog)
+      showFeedbackDialog(order, "ignored", dialog)
     }
     dialogView.findViewById<MaterialButton>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
     dialog.show()
@@ -269,10 +274,10 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
   private fun showFeedbackDialog(order: WorkOrderItem, status: String, detailDialog: AlertDialog) {
     val feedbackView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_work_order_feedback, null)
     feedbackView.findViewById<TextView>(R.id.tvFeedbackTitle).text =
-      if (status == "completed") "完成工单" else "关闭误报"
+      if (status == "completed") "完成工单" else "忽略工单"
     val messageInput = feedbackView.findViewById<TextInputEditText>(R.id.etProcessMessage)
     val imageInput = feedbackView.findViewById<TextInputEditText>(R.id.etProcessImageUrl)
-    messageInput.setText(if (status == "completed") "现场处置完成，道路恢复通行。" else "人工复核为误报，工单关闭。")
+    messageInput.setText(if (status == "completed") "现场处置完成，道路恢复通行。" else "该工单已忽略。")
 
     val feedbackDialog = AlertDialog.Builder(requireContext())
       .setView(feedbackView)

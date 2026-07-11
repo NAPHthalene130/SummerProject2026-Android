@@ -61,13 +61,13 @@ class InspectionAdapter(private val onTaskClick: (WorkOrderItem) -> Unit) : Recy
 
       val statusBackground = when (item.status) {
         "completed" -> R.drawable.bg_badge_low
-        "false_alarm" -> R.drawable.bg_badge_medium
+        "ignored", "false_alarm" -> R.drawable.bg_badge_medium
         "processing" -> R.drawable.bg_badge_high
         else -> R.drawable.bg_soft_panel
       }
       val statusColor = when (item.status) {
         "completed" -> R.color.badge_low_text
-        "false_alarm" -> R.color.badge_medium_text
+        "ignored", "false_alarm" -> R.color.badge_medium_text
         "processing" -> R.color.badge_high_text
         else -> R.color.brand_blue_text
       }
@@ -86,6 +86,7 @@ class InspectionAdapter(private val onTaskClick: (WorkOrderItem) -> Unit) : Recy
       "pending" -> "待处理"
       "processing" -> "处理中"
       "completed" -> "已完成"
+      "ignored" -> "已忽略"
       "false_alarm" -> "误报关闭"
       else -> "未知"
     }
