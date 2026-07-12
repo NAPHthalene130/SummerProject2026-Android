@@ -1,6 +1,7 @@
 package com.trafficmanagement.android.data.remote
 
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.widget.ImageView
@@ -12,6 +13,10 @@ object RemoteImageLoader {
   private val mainHandler = Handler(Looper.getMainLooper())
 
   fun load(imageView: ImageView, source: String) {
+    if (source.startsWith("content://") || source.startsWith("file://")) {
+      imageView.setImageURI(Uri.parse(source))
+      return
+    }
     val url = if (source.startsWith("/")) ApiEndpointManager.baseUrl() + source else source
     imageView.tag = url
     executor.execute {

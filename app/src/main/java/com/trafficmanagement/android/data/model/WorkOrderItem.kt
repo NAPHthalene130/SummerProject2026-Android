@@ -20,6 +20,9 @@ data class WorkOrderItem(
   val processMessage: String?,
   val processImages: List<String>,
   val completedAt: String?,
+  val feedbackReviewStatus: String = "none",
+  val feedbackRequestedStatus: String? = null,
+  val feedbackReviewMessage: String? = null,
 ) {
   val isCompleted: Boolean
     get() = status == "completed"

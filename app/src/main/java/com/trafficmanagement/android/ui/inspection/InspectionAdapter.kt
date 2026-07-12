@@ -43,7 +43,14 @@ class InspectionAdapter(private val onTaskClick: (WorkOrderItem) -> Unit) : Recy
       tvZone.text = item.monitorAddress.ifBlank { item.segmentName }
       tvDue.text = item.eventTime
       tvStatus.text = statusText(item.status)
-      tvAssignee.text = "处置人员：${item.assignee ?: "暂未派发"}"
+      tvAssignee.text = buildString {
+        append("处置人员：${item.assignee ?: "暂未派发"}")
+        when (item.feedbackReviewStatus) {
+          "pending" -> append("\n处置反馈：等待电脑端审核")
+          "approved" -> append("\n处置反馈：审核通过")
+          "rejected" -> append("\n处置反馈：已退回${item.feedbackReviewMessage?.let { "（$it）" } ?: ""}")
+        }
+      }
       tvLevel.text = levelText(item.eventLevel)
 
       val levelBackground = when (item.eventLevel) {
