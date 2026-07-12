@@ -45,6 +45,7 @@ public final class AuthManager {
 
   public static int getCurrentUserId(Context context) { return getPrefs(context).getInt(KEY_USER_ID, 0); }
   public static String getPersonnelCategory(Context context) { return getPrefs(context).getString(KEY_CATEGORY, "traffic_police"); }
+  public static String getSavedPassword(Context context) { return getPrefs(context).getString(KEY_PASSWORD, ""); }
 
   public static boolean login(Context context, String phone, String password) {
     SharedPreferences prefs = getPrefs(context);

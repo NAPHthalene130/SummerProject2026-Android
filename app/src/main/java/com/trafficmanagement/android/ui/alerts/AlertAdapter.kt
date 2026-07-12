@@ -45,7 +45,10 @@ class AlertAdapter(
       tvTitle.text = item.title
       tvLocation.text = "${item.location}  ·  ${item.submittedAt}"
       tvDetail.text = item.detail
-      tvMeta.text = "来源：${item.reporter}\n照片：${item.photoCount} 张\n指挥端状态：${syncStatusText(item.syncStatus)}"
+      tvMeta.text = buildString {
+        append("来源：${item.reporter}\n照片：${item.photoCount} 张\n指挥端状态：${syncStatusText(item.syncStatus)}")
+        item.reviewMessage?.takeIf { it.isNotBlank() }?.let { append("\n审核意见：$it") }
+      }
       renderPhotoThumbs(item.photoUris)
 
       when (item.severity) {
@@ -80,6 +83,7 @@ class AlertAdapter(
         ReportSyncStatus.WAITING_UPLOAD -> "待上传"
         ReportSyncStatus.SENT_TO_COMMAND_CENTER -> "已推送待研判"
         ReportSyncStatus.ACCEPTED -> "指挥端已接收"
+        ReportSyncStatus.REJECTED -> "审核未通过"
       }
     }
 

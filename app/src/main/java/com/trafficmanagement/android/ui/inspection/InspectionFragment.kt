@@ -1,5 +1,6 @@
 package com.trafficmanagement.android.ui.inspection
 
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -8,6 +9,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -34,6 +36,24 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
   private lateinit var messageTitle: TextView
   private lateinit var messageBody: TextView
   private var filter = WorkOrderFilter.UNRESOLVED
+
+  private var selectedProcessImageUri: Uri? = null
+  private var activeProcessImageName: TextView? = null
+  private var activeProcessImagePreview: ImageView? = null
+  private val pickProcessImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    selectedProcessImageUri = uri
+    activeProcessImageName?.text = if (uri == null) "未选择图片" else "已选择图片"
+    activeProcessImagePreview?.apply {
+      if (uri == null) {
+        visibility = View.GONE
+        setImageDrawable(null)
+      } else {
+        visibility = View.VISIBLE
+        setImageURI(uri)
+      }
+    }
+  }
+
   private val syncHandler = Handler(Looper.getMainLooper())
   private val syncRunnable = object : Runnable {
     override fun run() {
@@ -52,11 +72,7 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
     messageTitle = view.findViewById(R.id.tvOrderMessageTitle)
     messageBody = view.findViewById(R.id.tvOrderMessageBody)
     view.findViewById<TextView>(R.id.tvWorkOrderDataSource).text =
-      if (WorkOrderRepository.isMockMode) {
-        "当前为 Mock 演示数据，所有操作仅在本机生效"
-      } else {
-        "已连接云端工单服务"
-      }
+      if (WorkOrderRepository.isMockMode) "当前为 Mock 演示数据，所有操作仅在本机生效" else "已连接云端工单服务"
 
     recyclerView = view.findViewById(R.id.recyclerInspection)
     adapter = InspectionAdapter(::showWorkOrderDialog)
@@ -191,18 +207,18 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
     dialogView.findViewById<TextView>(R.id.tvDialogDescription).text = order.description
     dialogView.findViewById<TextView>(R.id.tvDialogAiSuggestion).text = order.aiSuggestion
     dialogView.findViewById<TextView>(R.id.tvDialogSceneInfo).text = order.sceneInfo
-    renderSceneImages(dialogView.findViewById(R.id.layoutSceneImages), order.sceneImages)
+    renderImages(dialogView.findViewById(R.id.layoutSceneImages), order.sceneImages)
 
     val recordLayout = dialogView.findViewById<LinearLayout>(R.id.layoutProcessRecord)
     recordLayout.isVisible = order.isResolved || !order.processMessage.isNullOrBlank()
     dialogView.findViewById<TextView>(R.id.tvDialogProcessRecord).text = buildString {
       append(order.processMessage ?: "暂无处置说明")
       order.completedAt?.let { append("\n完成时间：$it") }
-      if (order.processImages.isNotEmpty()) append("\n处置图片：${order.processImages.joinToString()}")
+      if (order.processImages.isNotEmpty()) append("\n处置图片：${order.processImages.size} 张")
     }
+    renderImages(dialogView.findViewById(R.id.layoutProcessImages), order.processImages)
 
-    val actions = dialogView.findViewById<LinearLayout>(R.id.layoutOrderActions)
-    actions.isVisible = !order.isResolved
+    dialogView.findViewById<LinearLayout>(R.id.layoutOrderActions).isVisible = !order.isResolved
     dialogView.findViewById<MaterialButton>(R.id.btnDialogProcessing).apply {
       isEnabled = order.status != "processing"
       setOnClickListener { showFeedbackDialog(order, "processing", dialog) }
@@ -217,11 +233,11 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
     dialog.show()
   }
 
-  private fun renderSceneImages(container: LinearLayout, images: List<String>) {
+  private fun renderImages(container: LinearLayout, images: List<String>) {
     container.removeAllViews()
     if (images.isEmpty()) {
       container.addView(TextView(requireContext()).apply {
-        text = "暂无现场图片"
+        text = "暂无图片"
         setTextColor(resources.getColor(R.color.text_tertiary, requireContext().theme))
       })
       return
@@ -234,7 +250,7 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
         }
         scaleType = ImageView.ScaleType.CENTER_CROP
         setBackgroundResource(R.drawable.bg_soft_panel)
-        contentDescription = "工单现场图片"
+        contentDescription = "工单图片"
       }
       container.addView(imageView)
       RemoteImageLoader.load(imageView, source)
@@ -248,8 +264,14 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
     val feedbackView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_work_order_feedback, null)
     feedbackView.findViewById<TextView>(R.id.tvFeedbackTitle).text = feedbackTitle(status)
     val messageInput = feedbackView.findViewById<TextInputEditText>(R.id.etProcessMessage)
-    val imageInput = feedbackView.findViewById<TextInputEditText>(R.id.etProcessImageUrl)
     messageInput.setText(defaultProcessMessage(status))
+
+    selectedProcessImageUri = null
+    activeProcessImageName = feedbackView.findViewById(R.id.tvProcessImageName)
+    activeProcessImagePreview = feedbackView.findViewById(R.id.ivProcessImagePreview)
+    feedbackView.findViewById<MaterialButton>(R.id.btnPickProcessImage).setOnClickListener {
+      pickProcessImageLauncher.launch("image/*")
+    }
 
     val feedbackDialog = AlertDialog.Builder(requireContext())
       .setView(feedbackView)
@@ -264,12 +286,39 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
           return@setOnClickListener
         }
         feedbackDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
-        updateStatus(order, status, message, imageInput.text?.toString(), detailDialog) {
+        submitFeedback(order, status, message, selectedProcessImageUri, detailDialog) {
           feedbackDialog.dismiss()
         }
       }
     }
+    feedbackDialog.setOnDismissListener {
+      activeProcessImageName = null
+      activeProcessImagePreview = null
+    }
     feedbackDialog.show()
+  }
+
+  private fun submitFeedback(
+    order: WorkOrderItem,
+    status: String,
+    message: String,
+    imageUri: Uri?,
+    detailDialog: AlertDialog,
+    onSuccess: (() -> Unit)? = null,
+  ) {
+    if (imageUri == null) {
+      updateStatus(order, status, message, null, detailDialog, onSuccess)
+      return
+    }
+
+    WorkOrderRepository.uploadProcessImage(requireContext(), imageUri) { uploadResult ->
+      if (!isAdded) return@uploadProcessImage
+      uploadResult.onSuccess { imageUrl ->
+        updateStatus(order, status, message, imageUrl, detailDialog, onSuccess)
+      }.onFailure {
+        showApiError("上传处置图片失败", it)
+      }
+    }
   }
 
   private fun feedbackTitle(status: String): String {
@@ -298,13 +347,24 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
     detailDialog: AlertDialog,
     onSuccess: (() -> Unit)? = null,
   ) {
-    WorkOrderRepository.updateStatus(order.workOrderId, status, message, imageUrl) { result ->
+    WorkOrderRepository.updateStatus(
+      order.workOrderId,
+      AuthManager.getCurrentUserId(requireContext()),
+      status,
+      message,
+      imageUrl,
+    ) { result ->
       if (!isAdded) return@updateStatus
       result.onSuccess { updated ->
         replaceOrder(updated)
         onSuccess?.invoke()
         detailDialog.dismiss()
-        UiMessageHelper.showShort(requireContext(), "工单状态已更新为 ${InspectionAdapter.statusText(status)}")
+        val notice = if (status == "completed" || status == "ignored" || status == "false_alarm") {
+          "处置结果已提交，等待电脑端审核"
+        } else {
+          "工单状态已更新为 ${InspectionAdapter.statusText(status)}"
+        }
+        UiMessageHelper.showShort(requireContext(), notice)
       }.onFailure { showApiError("更新工单失败", it) }
     }
   }

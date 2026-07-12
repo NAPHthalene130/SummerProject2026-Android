@@ -1,5 +1,7 @@
 package com.trafficmanagement.android.data
 
+import android.content.Context
+import android.net.Uri
 import com.trafficmanagement.android.BuildConfig
 import com.trafficmanagement.android.data.model.StaffMember
 import com.trafficmanagement.android.data.model.WorkOrderItem
@@ -161,13 +163,14 @@ object WorkOrderRepository {
 
   fun updateStatus(
     workOrderId: String,
+    userId: Int,
     status: String,
     processMessage: String?,
     processImageUrl: String?,
     callback: (Result<WorkOrderItem>) -> Unit,
   ) {
     if (!isMockMode) {
-      WorkOrderApi.updateStatus(workOrderId, status, processMessage, processImageUrl, callback)
+      WorkOrderApi.updateStatus(workOrderId, userId, status, processMessage, processImageUrl, callback)
       return
     }
     val index = mockOrders.indexOfFirst { it.workOrderId == workOrderId }
@@ -185,6 +188,18 @@ object WorkOrderRepository {
     )
     mockOrders[index] = updated
     callback(Result.success(updated))
+  }
+
+  fun uploadProcessImage(
+    context: Context,
+    imageUri: Uri,
+    callback: (Result<String>) -> Unit,
+  ) {
+    if (!isMockMode) {
+      WorkOrderApi.uploadImage(context, imageUri, callback)
+      return
+    }
+    callback(Result.success(imageUri.toString()))
   }
 
   private fun nowText(): String =

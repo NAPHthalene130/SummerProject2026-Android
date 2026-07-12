@@ -14,6 +14,7 @@ data class AlertItem(
   val submittedAt: String,
   val severity: Severity,
   val syncStatus: ReportSyncStatus,
+  val reviewMessage: String? = null,
 )
 
 enum class Severity {
@@ -26,4 +27,5 @@ enum class ReportSyncStatus {
   WAITING_UPLOAD,
   SENT_TO_COMMAND_CENTER,
   ACCEPTED,
+  REJECTED,
 }
