@@ -5,6 +5,10 @@ import android.os.Looper
 import com.trafficmanagement.android.BuildConfig
 import com.trafficmanagement.android.data.model.StaffMember
 import com.trafficmanagement.android.data.model.WorkOrderItem
+import com.trafficmanagement.android.data.model.AlertItem
+import com.trafficmanagement.android.data.model.ReportSyncStatus
+import com.trafficmanagement.android.data.model.Severity
+import com.trafficmanagement.android.data.model.TrafficEventType
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -25,12 +29,58 @@ object WorkOrderApi {
 
   private val baseUrl = BuildConfig.API_BASE_URL.trimEnd('/')
 
-  fun fetchWorkOrders(callback: (Result<List<WorkOrderItem>>) -> Unit) {
+  fun fetchWorkOrders(userId: Int = 0, callback: (Result<List<WorkOrderItem>>) -> Unit) {
     execute(callback) {
-      val payload = request("GET", "/api/v1/work-orders/")
+      val suffix = if (userId > 0) "?user_id=$userId" else ""
+      val payload = request("GET", "/api/v1/work-orders/$suffix")
       val array = JSONArray(payload)
       List(array.length()) { index -> parseWorkOrder(array.getJSONObject(index)) }
     }
+  }
+
+  fun registerUser(name: String, phone: String, password: String, category: String, callback: (Result<JSONObject>) -> Unit) {
+    execute(callback) {
+      val body = JSONObject().put("name", name).put("phone", phone).put("password", password)
+        .put("personnel_category", category).put("site", "中心城区交通处置平台")
+      requestJson("POST", "/api/v1/mobile-users/register", body.toString())
+    }
+  }
+
+  fun loginUser(phone: String, password: String, callback: (Result<JSONObject>) -> Unit) {
+    execute(callback) {
+      val body = JSONObject().put("phone", phone).put("password", password)
+      requestJson("POST", "/api/v1/mobile-users/login", body.toString())
+    }
+  }
+
+  fun submitMobileReport(userId: Int, title: String, location: String, detail: String, severity: String, imageUrls: List<String>, callback: (Result<JSONObject>) -> Unit) {
+    execute(callback) {
+      val images = JSONArray().also { array -> imageUrls.forEach(array::put) }
+      val body = JSONObject().put("reporter_user_id", userId).put("title", title).put("location", location)
+        .put("detail", detail).put("severity", severity).put("event_type", "traffic_event").put("image_urls", images)
+      requestJson("POST", "/api/v1/mobile-reports", body.toString())
+    }
+  }
+
+  fun fetchMobileReports(userId: Int, callback: (Result<List<AlertItem>>) -> Unit) {
+    execute(callback) {
+      val payload = request("GET", "/api/v1/mobile-reports?reporter_user_id=$userId")
+      val array = JSONArray(payload)
+      List(array.length()) { index -> parseMobileReport(array.getJSONObject(index)) }
+    }
+  }
+
+  private fun parseMobileReport(json: JSONObject): AlertItem {
+    val severity = when (json.optString("severity")) { "high" -> Severity.HIGH; "low" -> Severity.LOW; else -> Severity.MEDIUM }
+    val status = if (json.optString("status") == "converted") ReportSyncStatus.ACCEPTED else ReportSyncStatus.SENT_TO_COMMAND_CENTER
+    val images = json.optStringList("image_urls")
+    return AlertItem(
+      id = "report-${json.optInt("report_id")}", cameraId = "manual-mobile", roadSegmentId = "manual-road",
+      title = json.optString("title"), location = json.optString("location"), detail = json.optString("detail"),
+      reporter = json.optString("reporter_name"), eventType = TrafficEventType.COLLISION,
+      photoCount = images.size, photoUris = images, submittedAt = json.optString("created_at"),
+      severity = severity, syncStatus = status,
+    )
   }
 
   fun fetchStaff(callback: (Result<List<StaffMember>>) -> Unit) {

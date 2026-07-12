@@ -117,18 +117,18 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
       UiMessageHelper.showShort(requireContext(), "手机号必须是 11 位数字")
       return
     }
-    if (!AuthManager.hasRegisteredAccount(requireContext())) {
-      UiMessageHelper.showShort(requireContext(), "请先注册账号")
-      return
+    btnAuthSubmit.isEnabled = false
+    WorkOrderApi.loginUser(phone, password) { result ->
+      if (!isAdded) return@loginUser
+      btnAuthSubmit.isEnabled = true
+      result.onSuccess { json ->
+        AuthManager.saveRemoteAccount(
+          requireContext(), json.getInt("user_id"), json.optString("name"), phone, password,
+          json.optString("role_name"), json.optString("personnel_category"), json.optString("site"),
+        )
+        clearInputs(); refreshUi(); UiMessageHelper.showShort(requireContext(), "登录成功")
+      }.onFailure { UiMessageHelper.showShort(requireContext(), "登录失败：${it.message}") }
     }
-    if (!AuthManager.login(requireContext(), phone, password)) {
-      UiMessageHelper.showShort(requireContext(), "手机号或密码错误")
-      return
-    }
-
-    clearInputs()
-    refreshUi()
-    UiMessageHelper.showShort(requireContext(), "登录成功")
   }
 
   private fun handleRegister() {
@@ -150,18 +150,20 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
       return
     }
 
-    AuthManager.register(
-      requireContext(),
-      name,
-      phone,
-      password,
-      "事故违章处置组",
-      "中心城区交通指挥平台",
-    )
-
-    clearInputs()
-    refreshUi()
-    UiMessageHelper.showShort(requireContext(), "注册成功")
+    val names = arrayOf("交警执法", "道路养护", "市政设施", "清障救援", "交通疏导", "应急消防")
+    val codes = arrayOf("traffic_police", "road_maintenance", "municipal_facilities", "vehicle_rescue", "traffic_coordination", "emergency_fire")
+    AlertDialog.Builder(requireContext()).setTitle("选择职责类别").setItems(names) { _, index ->
+      btnAuthSubmit.isEnabled = false
+      WorkOrderApi.registerUser(name, phone, password, codes[index]) { result ->
+        if (!isAdded) return@registerUser
+        btnAuthSubmit.isEnabled = true
+        result.onSuccess { json ->
+          AuthManager.saveRemoteAccount(requireContext(), json.getInt("user_id"), name, phone, password,
+            json.optString("role_name", names[index]), codes[index], json.optString("site"))
+          clearInputs(); refreshUi(); UiMessageHelper.showShort(requireContext(), "注册成功：${names[index]}")
+        }.onFailure { UiMessageHelper.showShort(requireContext(), "注册失败：${it.message}") }
+      }
+    }.show()
   }
 
   private fun showCloudApiDialog() {

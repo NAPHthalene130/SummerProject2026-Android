@@ -19,6 +19,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.trafficmanagement.android.data.remote.ApiEndpointManager
 import com.trafficmanagement.android.R
 import com.trafficmanagement.android.data.WorkOrderRepository
+import com.trafficmanagement.android.utils.AuthManager
 import com.trafficmanagement.android.data.model.StaffMember
 import com.trafficmanagement.android.data.model.WorkOrderFilter
 import com.trafficmanagement.android.data.model.WorkOrderItem
@@ -103,7 +104,16 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
       messageLayout.isVisible = false
     }
 
-    WorkOrderRepository.fetchWorkOrders { result ->
+    val userId = AuthManager.getCurrentUserId(requireContext())
+    if (userId <= 0) {
+      progress.isVisible = false
+      orders.clear()
+      adapter.submitItems(emptyList())
+      showMessage("请先注册或登录", "登录后可查看与本人职责类别相同的全部工单，并可协助组内其他人员处理。")
+      return
+    }
+
+    WorkOrderRepository.fetchWorkOrders(userId) { result ->
       if (!isAdded) return@fetchWorkOrders
       progress.isVisible = false
       result.onSuccess { loadedOrders ->
@@ -151,7 +161,7 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
     if (visibleOrders.isEmpty()) {
       showMessage(
         "暂无匹配工单",
-        if (orders.isEmpty()) "后端数据库中暂无工单。" else "当前筛选条件下没有工单，请切换分类查看。",
+        if (orders.isEmpty()) "当前职责组暂无工单。" else "当前筛选条件下没有工单，请切换分类查看。",
       )
     } else {
       messageLayout.isVisible = false

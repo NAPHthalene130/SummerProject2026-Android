@@ -11,6 +11,8 @@ public final class AuthManager {
   private static final String KEY_ROLE = "role";
   private static final String KEY_SITE = "site";
   private static final String KEY_LOGGED_IN = "logged_in";
+  private static final String KEY_USER_ID = "user_id";
+  private static final String KEY_CATEGORY = "personnel_category";
 
   private AuthManager() {}
 
@@ -36,6 +38,14 @@ public final class AuthManager {
         .apply();
   }
 
+  public static void saveRemoteAccount(Context context, int userId, String name, String phone, String password, String role, String category, String site) {
+    register(context, name, phone, password, role, site);
+    getPrefs(context).edit().putInt(KEY_USER_ID, userId).putString(KEY_CATEGORY, category).apply();
+  }
+
+  public static int getCurrentUserId(Context context) { return getPrefs(context).getInt(KEY_USER_ID, 0); }
+  public static String getPersonnelCategory(Context context) { return getPrefs(context).getString(KEY_CATEGORY, "traffic_police"); }
+
   public static boolean login(Context context, String phone, String password) {
     SharedPreferences prefs = getPrefs(context);
     String savedPhone = prefs.getString(KEY_PHONE, "");
@@ -54,7 +64,9 @@ public final class AuthManager {
   }
 
   public static boolean isLoggedIn(Context context) {
-    return getPrefs(context).getBoolean(KEY_LOGGED_IN, false) && hasRegisteredAccount(context);
+    return getPrefs(context).getBoolean(KEY_LOGGED_IN, false)
+        && hasRegisteredAccount(context)
+        && getCurrentUserId(context) > 0;
   }
 
   public static OperatorProfile getCurrentProfile(Context context) {

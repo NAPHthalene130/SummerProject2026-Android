@@ -69,9 +69,10 @@ class AlertAdapter(
         }
       }
 
-      btnResend.text =
-        if (item.syncStatus == ReportSyncStatus.WAITING_UPLOAD) "上传指挥端" else "再次同步"
-      btnResend.setOnClickListener { onResendClick(item) }
+      val waitingUpload = item.syncStatus == ReportSyncStatus.WAITING_UPLOAD
+      btnResend.text = if (waitingUpload) "上传指挥端" else "已同步"
+      btnResend.isEnabled = waitingUpload
+      btnResend.setOnClickListener { if (waitingUpload) onResendClick(item) }
     }
 
     private fun syncStatusText(status: ReportSyncStatus): String {

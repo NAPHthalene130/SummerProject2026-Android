@@ -19,17 +19,17 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.textfield.TextInputEditText
 import com.trafficmanagement.android.BuildConfig
 import com.trafficmanagement.android.R
-import com.trafficmanagement.android.data.SampleRepository
 import com.trafficmanagement.android.data.model.AlertItem
-import com.trafficmanagement.android.data.model.ReportSyncStatus
 import com.trafficmanagement.android.data.model.Severity
-import com.trafficmanagement.android.data.model.TrafficEventType
 import com.trafficmanagement.android.utils.UiMessageHelper
+import com.trafficmanagement.android.utils.AuthManager
+import com.trafficmanagement.android.data.remote.WorkOrderApi
 import java.io.File
 
 class AlertsFragment : Fragment(R.layout.fragment_alerts) {
   private lateinit var adapter: AlertAdapter
   private lateinit var recyclerView: RecyclerView
+  private val reports = mutableListOf<AlertItem>()
   private var pendingPhotoUri: Uri? = null
   private var reportPhotoCount = 0
   private var reportPhotoCountView: TextView? = null
@@ -60,8 +60,7 @@ class AlertsFragment : Fragment(R.layout.fragment_alerts) {
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     super.onViewCreated(view, savedInstanceState)
 
-    val reports = SampleRepository.alerts()
-    view.findViewById<TextView>(R.id.tvAlertSummary).text = "已记录 ${reports.size} 条事故/违章事件"
+    view.findViewById<TextView>(R.id.tvAlertSummary).text = "正在同步上报记录..."
     view.findViewById<MaterialButton>(R.id.btnCreateAlertReport).setOnClickListener {
       showReportDialog()
     }
@@ -71,10 +70,37 @@ class AlertsFragment : Fragment(R.layout.fragment_alerts) {
     adapter = AlertAdapter(
       items = reports,
       onResendClick = { alert ->
-        UiMessageHelper.showShort(requireContext(), "${alert.title} 已同步到指挥端")
+        syncReport(alert)
       },
     )
     recyclerView.adapter = adapter
+    loadReports()
+  }
+
+  private fun loadReports() {
+    val userId = AuthManager.getCurrentUserId(requireContext())
+    if (userId <= 0) {
+      reports.clear(); adapter.notifyDataSetChanged()
+      view?.findViewById<TextView>(R.id.tvAlertSummary)?.text = "请先注册后端账号再查看上报"
+      return
+    }
+    WorkOrderApi.fetchMobileReports(userId) { result ->
+      if (!isAdded) return@fetchMobileReports
+      result.onSuccess { items ->
+        reports.clear(); reports.addAll(items); adapter.notifyDataSetChanged()
+        view?.findViewById<TextView>(R.id.tvAlertSummary)?.text = "已同步 ${reports.size} 条真实上报"
+      }.onFailure { UiMessageHelper.showShort(requireContext(), "同步上报失败：${it.message}") }
+    }
+  }
+
+  private fun syncReport(alert: AlertItem) {
+    val userId = AuthManager.getCurrentUserId(requireContext())
+    if (userId <= 0) return
+    val severity = when (alert.severity) { Severity.HIGH -> "high"; Severity.LOW -> "low"; else -> "medium" }
+    WorkOrderApi.submitMobileReport(userId, alert.title, alert.location, alert.detail, severity, alert.photoUris) { result ->
+      result.onSuccess { loadReports(); UiMessageHelper.showShort(requireContext(), "已重新同步到指挥端") }
+        .onFailure { UiMessageHelper.showShort(requireContext(), "同步失败：${it.message}") }
+    }
   }
 
   private fun showReportDialog() {
@@ -118,29 +144,19 @@ class AlertsFragment : Fragment(R.layout.fragment_alerts) {
         chipLow.isChecked -> Severity.LOW
         else -> Severity.MEDIUM
       }
-      SampleRepository.addReport(
-        AlertItem(
-          id = "event-${System.currentTimeMillis()}",
-          cameraId = "manual-mobile",
-          roadSegmentId = "manual-road",
-          title = title,
-          location = location,
-          detail = detail,
-          reporter = "当前处置人员",
-          eventType = TrafficEventType.COLLISION,
-          photoCount = reportPhotoCount,
-          photoUris = selectedReportPhotoUris.map { it.toString() },
-          submittedAt = "刚刚",
-          severity = severity,
-          syncStatus = ReportSyncStatus.SENT_TO_COMMAND_CENTER,
-        ),
-      )
-      adapter.notifyItemInserted(0)
-      recyclerView.scrollToPosition(0)
-      view?.findViewById<TextView>(R.id.tvAlertSummary)?.text =
-        "已记录 ${SampleRepository.alerts().size} 条事故/违章事件"
-      UiMessageHelper.showShort(requireContext(), "现场事件已上传，指挥端可生成工单")
-      dialog.dismiss()
+      val userId = AuthManager.getCurrentUserId(requireContext())
+      if (userId <= 0) {
+        UiMessageHelper.showShort(requireContext(), "请先在‘我的’页面注册并登录")
+        return@setOnClickListener
+      }
+      val severityCode = when (severity) { Severity.HIGH -> "high"; Severity.LOW -> "low"; else -> "medium" }
+      WorkOrderApi.submitMobileReport(userId, title, location, detail, severityCode, selectedReportPhotoUris.map { it.toString() }) { result ->
+        result.onSuccess {
+          loadReports(); recyclerView.scrollToPosition(0)
+          UiMessageHelper.showShort(requireContext(), "现场事件已上传，指挥端可审核转工单")
+          dialog.dismiss()
+        }.onFailure { UiMessageHelper.showShort(requireContext(), "上报失败：${it.message}") }
+      }
     }
 
     dialog.show()

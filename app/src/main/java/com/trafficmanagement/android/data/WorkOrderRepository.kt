@@ -127,9 +127,9 @@ object WorkOrderRepository {
     StaffMember("4", "人员D", "应急处置员", "idle", 1.8),
   )
 
-  fun fetchWorkOrders(callback: (Result<List<WorkOrderItem>>) -> Unit) {
+  fun fetchWorkOrders(userId: Int = 0, callback: (Result<List<WorkOrderItem>>) -> Unit) {
     if (!isMockMode) {
-      WorkOrderApi.fetchWorkOrders(callback)
+      WorkOrderApi.fetchWorkOrders(userId, callback)
       return
     }
     callback(Result.success(mockOrders.toList()))
