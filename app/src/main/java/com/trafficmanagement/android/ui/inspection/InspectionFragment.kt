@@ -5,8 +5,8 @@ import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.LinearLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
@@ -16,19 +16,17 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputEditText
-import com.trafficmanagement.android.data.remote.ApiEndpointManager
 import com.trafficmanagement.android.R
 import com.trafficmanagement.android.data.WorkOrderRepository
-import com.trafficmanagement.android.utils.AuthManager
-import com.trafficmanagement.android.data.model.StaffMember
 import com.trafficmanagement.android.data.model.WorkOrderFilter
 import com.trafficmanagement.android.data.model.WorkOrderItem
+import com.trafficmanagement.android.data.remote.ApiEndpointManager
 import com.trafficmanagement.android.data.remote.RemoteImageLoader
+import com.trafficmanagement.android.utils.AuthManager
 import com.trafficmanagement.android.utils.UiMessageHelper
 
 class InspectionFragment : Fragment(R.layout.fragment_inspection) {
   private val orders = mutableListOf<WorkOrderItem>()
-  private val staffMembers = mutableListOf<StaffMember>()
   private lateinit var adapter: InspectionAdapter
   private lateinit var recyclerView: RecyclerView
   private lateinit var progress: View
@@ -59,6 +57,7 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
       } else {
         "已连接云端工单服务"
       }
+
     recyclerView = view.findViewById(R.id.recyclerInspection)
     adapter = InspectionAdapter(::showWorkOrderDialog)
     recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -109,7 +108,7 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
       progress.isVisible = false
       orders.clear()
       adapter.submitItems(emptyList())
-      showMessage("请先注册或登录", "登录后可查看与本人职责类别相同的全部工单，并可协助组内其他人员处理。")
+      showMessage("请先注册或登录", "登录后可查看与本人职责类别相同的全部工单，并处理现场反馈。")
       return
     }
 
@@ -129,14 +128,6 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
             "${error.message ?: "网络连接异常"}\n当前地址：${ApiEndpointManager.baseUrl()}",
           )
         }
-      }
-    }
-
-    WorkOrderRepository.fetchStaff { result ->
-      if (!isAdded) return@fetchStaff
-      result.onSuccess { loadedStaff ->
-        staffMembers.clear()
-        staffMembers.addAll(loadedStaff.sortedBy { it.distanceKm })
       }
     }
   }
@@ -212,12 +203,9 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
 
     val actions = dialogView.findViewById<LinearLayout>(R.id.layoutOrderActions)
     actions.isVisible = !order.isResolved
-    val assignButton = dialogView.findViewById<MaterialButton>(R.id.btnDialogAssign)
-    assignButton.text = if (order.assignee == null) "派发工单" else "重新派发"
-    assignButton.setOnClickListener { showStaffDialog(order, dialog) }
     dialogView.findViewById<MaterialButton>(R.id.btnDialogProcessing).apply {
       isEnabled = order.status != "processing"
-      setOnClickListener { updateStatus(order, "processing", null, null, dialog) }
+      setOnClickListener { showFeedbackDialog(order, "processing", dialog) }
     }
     dialogView.findViewById<MaterialButton>(R.id.btnDialogComplete).setOnClickListener {
       showFeedbackDialog(order, "completed", dialog)
@@ -256,38 +244,12 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
   private fun dp(value: Int): Int =
     (value * resources.displayMetrics.density).toInt()
 
-  private fun showStaffDialog(order: WorkOrderItem, detailDialog: AlertDialog) {
-    val availableStaff = staffMembers.filter { it.status == "idle" }
-    if (availableStaff.isEmpty()) {
-      UiMessageHelper.showShort(requireContext(), "暂无空闲人员，请刷新后重试")
-      return
-    }
-    val labels = availableStaff.map { "${it.name} · ${it.role} · ${it.distanceKm} km" }.toTypedArray()
-    AlertDialog.Builder(requireContext())
-      .setTitle("派发工单")
-      .setItems(labels) { staffDialog, index ->
-        val staff = availableStaff[index]
-        staffDialog.dismiss()
-        WorkOrderRepository.dispatchWorkOrder(order.workOrderId, staff.id) { result ->
-          if (!isAdded) return@dispatchWorkOrder
-          result.onSuccess { updated ->
-            replaceOrder(updated)
-            detailDialog.dismiss()
-            UiMessageHelper.showShort(requireContext(), "已派发给 ${staff.name}")
-          }.onFailure { showApiError("派发工单失败", it) }
-        }
-      }
-      .setNegativeButton("取消", null)
-      .show()
-  }
-
   private fun showFeedbackDialog(order: WorkOrderItem, status: String, detailDialog: AlertDialog) {
     val feedbackView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_work_order_feedback, null)
-    feedbackView.findViewById<TextView>(R.id.tvFeedbackTitle).text =
-      if (status == "completed") "完成工单" else "忽略工单"
+    feedbackView.findViewById<TextView>(R.id.tvFeedbackTitle).text = feedbackTitle(status)
     val messageInput = feedbackView.findViewById<TextInputEditText>(R.id.etProcessMessage)
     val imageInput = feedbackView.findViewById<TextInputEditText>(R.id.etProcessImageUrl)
-    messageInput.setText(if (status == "completed") "现场处置完成，道路恢复通行。" else "该工单已忽略。")
+    messageInput.setText(defaultProcessMessage(status))
 
     val feedbackDialog = AlertDialog.Builder(requireContext())
       .setView(feedbackView)
@@ -310,6 +272,24 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
     feedbackDialog.show()
   }
 
+  private fun feedbackTitle(status: String): String {
+    return when (status) {
+      "processing" -> "标记处理中"
+      "completed" -> "完成工单"
+      "ignored", "false_alarm" -> "标记误报"
+      else -> "更新工单"
+    }
+  }
+
+  private fun defaultProcessMessage(status: String): String {
+    return when (status) {
+      "processing" -> "现场人员已开始处理，可上传现场过程图片。"
+      "completed" -> "现场处置完成，道路恢复通行。"
+      "ignored", "false_alarm" -> "人工复核为误报，工单关闭。"
+      else -> ""
+    }
+  }
+
   private fun updateStatus(
     order: WorkOrderItem,
     status: String,
@@ -324,7 +304,7 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
         replaceOrder(updated)
         onSuccess?.invoke()
         detailDialog.dismiss()
-        UiMessageHelper.showShort(requireContext(), "工单状态已更新为${InspectionAdapter.statusText(status)}")
+        UiMessageHelper.showShort(requireContext(), "工单状态已更新为 ${InspectionAdapter.statusText(status)}")
       }.onFailure { showApiError("更新工单失败", it) }
     }
   }
