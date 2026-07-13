@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import com.trafficmanagement.android.BuildConfig
+import com.trafficmanagement.android.data.model.AssistantChatResponse
 import com.trafficmanagement.android.data.model.StaffMember
 import com.trafficmanagement.android.data.model.WorkOrderItem
 import com.trafficmanagement.android.data.model.AlertItem
@@ -70,6 +71,29 @@ object WorkOrderApi {
       val payload = request("GET", "/api/v1/mobile-reports?reporter_user_id=$userId")
       val array = JSONArray(payload)
       List(array.length()) { index -> parseMobileReport(array.getJSONObject(index)) }
+    }
+  }
+
+  fun askAssistant(
+    message: String,
+    threadId: String? = null,
+    callback: (Result<AssistantChatResponse>) -> Unit,
+  ) {
+    execute(callback) {
+      val body = JSONObject().put("message", message)
+      threadId?.takeIf { it.isNotBlank() }?.let { body.put("thread_id", it) }
+      val json = requestJson(
+        method = "POST",
+        path = "/api/v1/agent/android/chat",
+        body = body.toString(),
+        readTimeoutMillis = 60_000,
+      )
+      AssistantChatResponse(
+        reply = json.optString("reply").ifBlank {
+          throw IllegalStateException("助手未返回有效建议")
+        },
+        threadId = json.optString("thread_id"),
+      )
     }
   }
 
@@ -156,16 +180,25 @@ object WorkOrderApi {
     return "/api/v1/work-orders/$encoded/$action"
   }
 
-  private fun requestJson(method: String, path: String, body: String): JSONObject =
-    JSONObject(request(method, path, body))
+  private fun requestJson(
+    method: String,
+    path: String,
+    body: String,
+    readTimeoutMillis: Int = 12_000,
+  ): JSONObject = JSONObject(request(method, path, body, readTimeoutMillis))
 
-  private fun request(method: String, path: String, body: String? = null): String {
+  private fun request(
+    method: String,
+    path: String,
+    body: String? = null,
+    readTimeoutMillis: Int = 12_000,
+  ): String {
     val baseUrl = ApiEndpointManager.baseUrl()
     val connection = URI.create("$baseUrl$path").toURL().openConnection() as HttpURLConnection
     return try {
       connection.requestMethod = method
       connection.connectTimeout = 8_000
-      connection.readTimeout = 12_000
+      connection.readTimeout = readTimeoutMillis
       connection.setRequestProperty("Accept", "application/json")
       if (body != null) {
         connection.doOutput = true
