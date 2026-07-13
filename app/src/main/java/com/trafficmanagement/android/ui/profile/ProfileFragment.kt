@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
@@ -168,10 +169,33 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
   private fun showCloudApiDialog() {
     val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_cloud_api_settings, null)
-    val urlInput = dialogView.findViewById<TextInputEditText>(R.id.etCloudApiUrl)
+    val modeGroup = dialogView.findViewById<RadioGroup>(R.id.rgConnectionMode)
+    val cloudUrlInput = dialogView.findViewById<TextInputEditText>(R.id.etCloudApiUrl)
+    val localUrlInput = dialogView.findViewById<TextInputEditText>(R.id.etLocalApiUrl)
     val statusView = dialogView.findViewById<TextView>(R.id.tvCloudApiStatus)
-    urlInput.setText(ApiEndpointManager.baseUrl())
-    statusView.text = "保存后，工单、人员和图片请求都会使用此地址。"
+
+    fun renderSettings() {
+      cloudUrlInput.setText(ApiEndpointManager.cloudBaseUrl())
+      localUrlInput.setText(ApiEndpointManager.localBaseUrl())
+      modeGroup.check(
+        if (ApiEndpointManager.connectionMode() == ApiEndpointManager.ConnectionMode.CLOUD) {
+          R.id.rbCloudConnection
+        } else {
+          R.id.rbLocalConnection
+        },
+      )
+      statusView.text = "当前使用：${ApiEndpointManager.baseUrl()}"
+    }
+
+    renderSettings()
+    modeGroup.setOnCheckedChangeListener { _, checkedId ->
+      val selectedUrl = if (checkedId == R.id.rbCloudConnection) {
+        cloudUrlInput.text?.toString().orEmpty()
+      } else {
+        localUrlInput.text?.toString().orEmpty()
+      }
+      statusView.text = "切换后将使用：${selectedUrl.ifBlank { "请填写服务器地址" }}"
+    }
 
     val dialog = AlertDialog.Builder(requireContext())
       .setView(dialogView)
@@ -183,13 +207,24 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
     dialog.setOnShowListener {
       dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
         ApiEndpointManager.reset()
-        urlInput.setText(ApiEndpointManager.baseUrl())
-        statusView.text = "已恢复构建时的默认地址。"
+        renderSettings()
+        statusView.text = "已恢复默认配置，当前使用云端服务器。"
       }
       dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-        val saveResult = ApiEndpointManager.saveBaseUrl(urlInput.text?.toString().orEmpty())
+        cloudUrlInput.error = null
+        localUrlInput.error = null
+        val mode = if (modeGroup.checkedRadioButtonId == R.id.rbLocalConnection) {
+          ApiEndpointManager.ConnectionMode.LOCAL
+        } else {
+          ApiEndpointManager.ConnectionMode.CLOUD
+        }
+        val saveResult = ApiEndpointManager.saveSettings(
+          mode = mode,
+          cloudUrl = cloudUrlInput.text?.toString().orEmpty(),
+          localUrl = localUrlInput.text?.toString().orEmpty(),
+        )
         saveResult.onFailure {
-          urlInput.error = it.message
+          statusView.text = "配置错误：${it.message}"
           return@setOnClickListener
         }
 
@@ -200,10 +235,11 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
           if (!isAdded) return@ping
           button.isEnabled = true
           result.onSuccess {
-            UiMessageHelper.showShort(requireContext(), "云端服务器连接成功")
+            val modeName = if (mode == ApiEndpointManager.ConnectionMode.CLOUD) "云端" else "本地"
+            UiMessageHelper.showShort(requireContext(), "${modeName}服务器连接成功")
             dialog.dismiss()
           }.onFailure {
-            statusView.text = "连接失败：${it.message ?: "请检查域名、HTTPS 证书和后端状态"}"
+            statusView.text = "连接失败：${it.message ?: "请检查服务器地址、网络和后端状态"}"
           }
         }
       }

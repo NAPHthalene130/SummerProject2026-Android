@@ -21,7 +21,7 @@
       <TextView android:id="@+id/tvUserPhone" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" />
       <TextView android:id="@+id/tvUserSite" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" />
     </LinearLayout>
-    <com.google.android.material.button.MaterialButton android:id="@+id/btnServerSettings" style="@style/Widget.Traffic.SecondaryButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="云端服务器设置" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/btnServerSettings" style="@style/Widget.Traffic.SecondaryButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="服务器连接设置" />
     <LinearLayout android:id="@+id/loggedInActionGroup" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:orientation="vertical" android:visibility="gone">
       <com.google.android.material.button.MaterialButton android:id="@+id/btnSyncData" style="@style/Widget.Traffic.PrimaryButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="同步数据" />
       <com.google.android.material.button.MaterialButton android:id="@+id/btnAbout" style="@style/Widget.Traffic.SecondaryButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="系统信息" />

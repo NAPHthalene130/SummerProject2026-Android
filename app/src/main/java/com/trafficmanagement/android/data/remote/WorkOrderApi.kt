@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import com.trafficmanagement.android.BuildConfig
 import com.trafficmanagement.android.data.model.AssistantChatResponse
 import com.trafficmanagement.android.data.model.StaffMember
 import com.trafficmanagement.android.data.model.WorkOrderItem
@@ -30,8 +29,6 @@ object WorkOrderApi {
       true
     }
   }
-
-  private val baseUrl = BuildConfig.API_BASE_URL.trimEnd('/')
 
   fun fetchWorkOrders(userId: Int = 0, callback: (Result<List<WorkOrderItem>>) -> Unit) {
     execute(callback) {
