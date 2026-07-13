@@ -8,7 +8,7 @@
   <TextView
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:text="云端服务器"
+    android:text="服务器连接设置"
     android:textColor="@color/text_primary"
     android:textSize="20sp"
     android:textStyle="bold" />
@@ -17,17 +17,53 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="6dp"
-    android:text="填写已部署后端的 HTTPS 根地址，不要包含 /api/v1。"
+    android:text="选择云端或本地服务器。地址只填写根地址，不要包含 /api/v1。"
     android:textColor="@color/text_secondary" />
+
+  <RadioGroup
+    android:id="@+id/rgConnectionMode"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="14dp"
+    android:orientation="horizontal">
+
+    <RadioButton
+      android:id="@+id/rbCloudConnection"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:text="使用云端连接" />
+
+    <RadioButton
+      android:id="@+id/rbLocalConnection"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:text="使用本地连接" />
+  </RadioGroup>
 
   <com.google.android.material.textfield.TextInputLayout
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="14dp"
-    android:hint="例如 https://api.example.com">
+    android:hint="云端服务器地址">
 
     <com.google.android.material.textfield.TextInputEditText
       android:id="@+id/etCloudApiUrl"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:inputType="textUri"
+      android:singleLine="true" />
+  </com.google.android.material.textfield.TextInputLayout>
+
+  <com.google.android.material.textfield.TextInputLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:hint="本地服务器地址">
+
+    <com.google.android.material.textfield.TextInputEditText
+      android:id="@+id/etLocalApiUrl"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:inputType="textUri"
