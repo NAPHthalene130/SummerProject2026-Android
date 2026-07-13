@@ -8,6 +8,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.Fragment
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.trafficmanagement.android.data.remote.ApiEndpointManager
 import com.trafficmanagement.android.data.remote.WorkOrderApi
 import com.trafficmanagement.android.ui.alerts.AlertsFragment
@@ -26,8 +30,11 @@ class MainActivity : AppCompatActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    WindowCompat.setDecorFitsSystemWindows(window, false)
     ApiEndpointManager.initialize(applicationContext)
     setContentView(R.layout.activity_main)
+
+    applySystemBarInsets()
 
     bottomNavigationView = findViewById(R.id.bottomNav)
     bottomNavCard = findViewById(R.id.bottomNavCard)
@@ -76,6 +83,24 @@ class MainActivity : AppCompatActivity() {
     if (savedInstanceState == null) {
       bottomNavigationView.selectedItemId = R.id.nav_home
     }
+  }
+
+  private fun applySystemBarInsets() {
+    val root = findViewById<View>(R.id.mainRoot)
+    val initialPadding = Insets.of(root.paddingLeft, root.paddingTop, root.paddingRight, root.paddingBottom)
+    ViewCompat.setOnApplyWindowInsetsListener(root) { view, windowInsets ->
+      val safeInsets = windowInsets.getInsets(
+        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
+      )
+      view.setPadding(
+        initialPadding.left + safeInsets.left,
+        initialPadding.top + safeInsets.top,
+        initialPadding.right + safeInsets.right,
+        initialPadding.bottom + safeInsets.bottom,
+      )
+      windowInsets
+    }
+    ViewCompat.requestApplyInsets(root)
   }
 
   override fun onStart() {
