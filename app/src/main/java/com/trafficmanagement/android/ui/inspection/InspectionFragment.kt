@@ -1,5 +1,6 @@
 package com.trafficmanagement.android.ui.inspection
 
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -11,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -279,13 +281,21 @@ class InspectionFragment : Fragment(R.layout.fragment_inspection) {
       .setPositiveButton("提交", null)
       .create()
     feedbackDialog.setOnShowListener {
-      feedbackDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+      val buttonTextColor = ContextCompat.getColor(requireContext(), R.color.text_primary)
+      val cancelButton = feedbackDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+      val submitButton = feedbackDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+      listOf(cancelButton, submitButton).forEach { button ->
+        button.alpha = 1f
+        button.setTextColor(buttonTextColor)
+        button.setTypeface(button.typeface, Typeface.BOLD)
+      }
+      submitButton.setOnClickListener {
         val message = messageInput.text?.toString().orEmpty().trim()
         if (message.isBlank()) {
           messageInput.error = "请填写处置说明"
           return@setOnClickListener
         }
-        feedbackDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+        submitButton.isEnabled = false
         submitFeedback(order, status, message, selectedProcessImageUri, detailDialog) {
           feedbackDialog.dismiss()
         }
