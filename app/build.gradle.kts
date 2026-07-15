@@ -76,6 +76,7 @@ dependencies {
   implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.9.1")
   implementation("androidx.recyclerview:recyclerview:1.4.0")
   implementation("androidx.cardview:cardview:1.0.0")
+  implementation("io.noties.markwon:core:4.6.2")
 
   testImplementation("junit:junit:4.13.2")
   androidTestImplementation("androidx.test.ext:junit:1.2.1")

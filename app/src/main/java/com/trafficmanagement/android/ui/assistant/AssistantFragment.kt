@@ -1,6 +1,7 @@
 package com.trafficmanagement.android.ui.assistant
 
 import android.os.Bundle
+import android.text.method.LinkMovementMethod
 import android.view.View
 import android.widget.EditText
 import android.widget.TextView
@@ -9,6 +10,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.trafficmanagement.android.R
 import com.trafficmanagement.android.data.remote.WorkOrderApi
+import io.noties.markwon.Markwon
 
 class AssistantFragment : Fragment(R.layout.fragment_assistant) {
   companion object {
@@ -35,6 +37,8 @@ class AssistantFragment : Fragment(R.layout.fragment_assistant) {
 
     val input = view.findViewById<EditText>(R.id.etAssistantInput)
     val output = view.findViewById<TextView>(R.id.tvAssistantResult)
+    val markwon = Markwon.create(requireContext())
+    output.movementMethod = LinkMovementMethod.getInstance()
     val cardResult = view.findViewById<MaterialCardView>(R.id.cardResult)
     val askButton = view.findViewById<MaterialButton>(R.id.btnAskAssistant)
     val quickAccidentButton = view.findViewById<MaterialButton>(R.id.btnQuickAc)
@@ -60,7 +64,7 @@ class AssistantFragment : Fragment(R.layout.fragment_assistant) {
         askButton.text = "生成建议"
         result.onSuccess { response ->
           threadId = response.threadId.takeIf { it.isNotBlank() }
-          output.text = response.reply
+          markwon.setMarkdown(output, response.reply)
         }.onFailure { error ->
           output.text = "助手服务暂时不可用：${error.message ?: "网络连接异常"}\n请检查后端地址或稍后重试。"
         }
