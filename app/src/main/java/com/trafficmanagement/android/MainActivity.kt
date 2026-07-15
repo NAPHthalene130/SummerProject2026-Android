@@ -5,9 +5,15 @@ import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.Fragment
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.trafficmanagement.android.data.remote.ApiEndpointManager
+import com.trafficmanagement.android.data.remote.WorkOrderApi
 import com.trafficmanagement.android.ui.alerts.AlertsFragment
 import com.trafficmanagement.android.ui.assistant.AssistantFragment
 import com.trafficmanagement.android.ui.device.DeviceDetailFragment
@@ -15,15 +21,20 @@ import com.trafficmanagement.android.ui.home.HomeFragment
 import com.trafficmanagement.android.ui.inspection.InspectionFragment
 import com.trafficmanagement.android.ui.profile.ProfileFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.trafficmanagement.android.utils.AuthManager
 
 class MainActivity : AppCompatActivity() {
   private lateinit var bottomNavigationView: BottomNavigationView
   private lateinit var bottomNavCard: View
+  private var accountValidationInFlight = false
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    WindowCompat.setDecorFitsSystemWindows(window, false)
     ApiEndpointManager.initialize(applicationContext)
     setContentView(R.layout.activity_main)
+
+    applySystemBarInsets()
 
     bottomNavigationView = findViewById(R.id.bottomNav)
     bottomNavCard = findViewById(R.id.bottomNavCard)
@@ -74,6 +85,64 @@ class MainActivity : AppCompatActivity() {
     }
   }
 
+  private fun applySystemBarInsets() {
+    val root = findViewById<View>(R.id.mainRoot)
+    val initialPadding = Insets.of(root.paddingLeft, root.paddingTop, root.paddingRight, root.paddingBottom)
+    ViewCompat.setOnApplyWindowInsetsListener(root) { view, windowInsets ->
+      val safeInsets = windowInsets.getInsets(
+        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
+      )
+      view.setPadding(
+        initialPadding.left + safeInsets.left,
+        initialPadding.top + safeInsets.top,
+        initialPadding.right + safeInsets.right,
+        initialPadding.bottom + safeInsets.bottom,
+      )
+      windowInsets
+    }
+    ViewCompat.requestApplyInsets(root)
+  }
+
+  override fun onStart() {
+    super.onStart()
+    validateCurrentAccount()
+  }
+
+  private fun validateCurrentAccount() {
+    if (accountValidationInFlight || !AuthManager.isLoggedIn(this)) return
+    val profile = AuthManager.getCurrentProfile(this) ?: return
+    val password = AuthManager.getSavedPassword(this)
+    if (profile.phone.isBlank() || password.isBlank()) return
+    accountValidationInFlight = true
+    WorkOrderApi.loginUser(profile.phone, password) { result ->
+      accountValidationInFlight = false
+      result.onSuccess { json ->
+        AuthManager.saveRemoteAccount(
+          this,
+          json.getInt("user_id"),
+          json.optString("name"),
+          profile.phone,
+          password,
+          json.optString("role_name"),
+          json.optString("personnel_category"),
+          json.optString("site"),
+        )
+      }.onFailure { error ->
+        val message = error.message.orEmpty()
+        val accountInvalid = message.contains("账号不存在") || message.contains("已被删除") || message.contains("手机号或密码错误")
+        if (!accountInvalid) return@onFailure
+        AuthManager.logout(this)
+        bottomNavigationView.selectedItemId = R.id.nav_profile
+        AlertDialog.Builder(this)
+          .setTitle("登录已失效")
+          .setMessage("该账号已被管理端删除或登录密码已变更，请重新登录。")
+          .setPositiveButton("重新登录", null)
+          .setCancelable(false)
+          .show()
+      }
+    }
+  }
+
   private fun updateBottomNavVisibility() {
     if (supportFragmentManager.backStackEntryCount == 0) {
       bottomNavCard.visibility = View.VISIBLE
@@ -113,4 +182,3 @@ class MainActivity : AppCompatActivity() {
     supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
   }
 }
-

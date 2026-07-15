@@ -57,6 +57,7 @@
 
     <include android:id="@+id/metricUnresolved" layout="@layout/item_work_order_metric" />
     <include android:id="@+id/metricCompleted" layout="@layout/item_work_order_metric" />
+    <include android:id="@+id/metricIgnored" layout="@layout/item_work_order_metric" />
     <include android:id="@+id/metricAll" layout="@layout/item_work_order_metric" />
   </LinearLayout>
 
@@ -84,6 +85,14 @@
       android:layout_height="44dp"
       android:layout_weight="1"
       android:text="已解决" />
+
+    <com.google.android.material.button.MaterialButton
+      android:id="@+id/btnFilterIgnored"
+      style="@style/Widget.Material3.Button.OutlinedButton"
+      android:layout_width="0dp"
+      android:layout_height="44dp"
+      android:layout_weight="1"
+      android:text="已忽略" />
 
     <com.google.android.material.button.MaterialButton
       android:id="@+id/btnFilterAll"

@@ -27,16 +27,30 @@
       android:minLines="4" />
   </com.google.android.material.textfield.TextInputLayout>
 
-  <com.google.android.material.textfield.TextInputLayout
+  <com.google.android.material.button.MaterialButton
+    android:id="@+id/btnPickProcessImage"
+    style="@style/Widget.Traffic.SecondaryButton"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="10dp"
-    android:hint="处置图片 URL（可选）">
+    android:layout_marginTop="12dp"
+    android:text="上传图片" />
 
-    <com.google.android.material.textfield.TextInputEditText
-      android:id="@+id/etProcessImageUrl"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:inputType="textUri" />
-  </com.google.android.material.textfield.TextInputLayout>
+  <TextView
+    android:id="@+id/tvProcessImageName"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:text="未选择图片"
+    android:textColor="@color/text_secondary"
+    android:textSize="13sp" />
+
+  <ImageView
+    android:id="@+id/ivProcessImagePreview"
+    android:layout_width="match_parent"
+    android:layout_height="150dp"
+    android:layout_marginTop="8dp"
+    android:background="@drawable/bg_soft_panel"
+    android:contentDescription="处置图片预览"
+    android:scaleType="centerCrop"
+    android:visibility="gone" />
 </LinearLayout>

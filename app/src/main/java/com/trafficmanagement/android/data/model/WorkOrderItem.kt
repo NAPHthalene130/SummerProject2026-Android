@@ -20,9 +20,18 @@ data class WorkOrderItem(
   val processMessage: String?,
   val processImages: List<String>,
   val completedAt: String?,
+  val feedbackReviewStatus: String = "none",
+  val feedbackRequestedStatus: String? = null,
+  val feedbackReviewMessage: String? = null,
 ) {
+  val isCompleted: Boolean
+    get() = status == "completed"
+
+  val isIgnored: Boolean
+    get() = status == "ignored" || status == "false_alarm"
+
   val isResolved: Boolean
-    get() = status == "completed" || status == "false_alarm"
+    get() = isCompleted || isIgnored
 }
 
 data class StaffMember(
@@ -36,5 +45,6 @@ data class StaffMember(
 enum class WorkOrderFilter {
   UNRESOLVED,
   COMPLETED,
+  IGNORED,
   ALL,
 }

@@ -2,8 +2,18 @@
   id("com.android.application")
 }
 
-val trafficApiBaseUrl = providers.gradleProperty("TRAFFIC_API_BASE_URL").orElse("https://your-api-domain.example.com").get()
-val workOrderUseMock = providers.gradleProperty("WORK_ORDER_USE_MOCK").orElse("true").get().toBoolean()
+val trafficApiBaseUrl = providers.gradleProperty("TRAFFIC_API_BASE_URL").orElse("http://10.0.2.2:8000").get()
+val workOrderUseMock = providers.gradleProperty("WORK_ORDER_USE_MOCK").orElse("false").get().toBoolean()
+val releaseStoreFile = System.getenv("ANDROID_KEYSTORE_PATH")
+val releaseStorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+val hasReleaseSigning = listOf(
+  releaseStoreFile,
+  releaseStorePassword,
+  releaseKeyAlias,
+  releaseKeyPassword,
+).all { !it.isNullOrBlank() }
 
 android {
   namespace = "com.trafficmanagement.android"
@@ -22,9 +32,23 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
+  signingConfigs {
+    if (hasReleaseSigning) {
+      create("ciRelease") {
+        storeFile = file(requireNotNull(releaseStoreFile))
+        storePassword = requireNotNull(releaseStorePassword)
+        keyAlias = requireNotNull(releaseKeyAlias)
+        keyPassword = requireNotNull(releaseKeyPassword)
+      }
+    }
+  }
+
   buildTypes {
     release {
       isMinifyEnabled = false
+      if (hasReleaseSigning) {
+        signingConfig = signingConfigs.getByName("ciRelease")
+      }
       proguardFiles(
         getDefaultProguardFile("proguard-android-optimize.txt"),
         "proguard-rules.pro",
@@ -57,4 +81,3 @@ dependencies {
   androidTestImplementation("androidx.test.ext:junit:1.2.1")
   androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
-

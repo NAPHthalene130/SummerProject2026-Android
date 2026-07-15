@@ -1,5 +1,7 @@
 package com.trafficmanagement.android.data
 
+import android.content.Context
+import android.net.Uri
 import com.trafficmanagement.android.BuildConfig
 import com.trafficmanagement.android.data.model.StaffMember
 import com.trafficmanagement.android.data.model.WorkOrderItem
@@ -108,7 +110,7 @@ object WorkOrderRepository {
       accidentInfo = "AI 误报行人进入机动车道",
       eventTime = "2026-07-10 07:52:00",
       eventLevel = "low",
-      status = "false_alarm",
+      status = "ignored",
       assignee = "人员D",
       description = "模型将隔离区域内的保洁人员误判为行人闯入机动车道。",
       aiSuggestion = "将该样本加入误报样本库，优化施工人员识别标签。",
@@ -127,9 +129,9 @@ object WorkOrderRepository {
     StaffMember("4", "人员D", "应急处置员", "idle", 1.8),
   )
 
-  fun fetchWorkOrders(callback: (Result<List<WorkOrderItem>>) -> Unit) {
+  fun fetchWorkOrders(userId: Int = 0, callback: (Result<List<WorkOrderItem>>) -> Unit) {
     if (!isMockMode) {
-      WorkOrderApi.fetchWorkOrders(callback)
+      WorkOrderApi.fetchWorkOrders(userId, callback)
       return
     }
     callback(Result.success(mockOrders.toList()))
@@ -161,13 +163,14 @@ object WorkOrderRepository {
 
   fun updateStatus(
     workOrderId: String,
+    userId: Int,
     status: String,
     processMessage: String?,
     processImageUrl: String?,
     callback: (Result<WorkOrderItem>) -> Unit,
   ) {
     if (!isMockMode) {
-      WorkOrderApi.updateStatus(workOrderId, status, processMessage, processImageUrl, callback)
+      WorkOrderApi.updateStatus(workOrderId, userId, status, processMessage, processImageUrl, callback)
       return
     }
     val index = mockOrders.indexOfFirst { it.workOrderId == workOrderId }
@@ -176,7 +179,7 @@ object WorkOrderRepository {
       return
     }
     val current = mockOrders[index]
-    val resolved = status == "completed" || status == "false_alarm"
+    val resolved = status == "completed" || status == "ignored" || status == "false_alarm"
     val updated = current.copy(
       status = status,
       processMessage = processMessage ?: current.processMessage,
@@ -185,6 +188,18 @@ object WorkOrderRepository {
     )
     mockOrders[index] = updated
     callback(Result.success(updated))
+  }
+
+  fun uploadProcessImage(
+    context: Context,
+    imageUri: Uri,
+    callback: (Result<String>) -> Unit,
+  ) {
+    if (!isMockMode) {
+      WorkOrderApi.uploadImage(context, imageUri, callback)
+      return
+    }
+    callback(Result.success(imageUri.toString()))
   }
 
   private fun nowText(): String =
